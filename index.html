@@ -448,6 +448,7 @@ html.phone .ttl{font-size:24px!important}.phone .ttl.s{font-size:18px}.phone .ts
 .phone .xbar{flex-wrap:wrap}.phone .xbar .srch{flex:1 1 100%;min-width:0}.phone .xbar .xbtn{margin-left:auto}
 
 .ib svg{width:30px!important;height:30px!important}
+.ib em.dty{background:#C8553D!important;color:#fff!important}
 </style></head>
 <body>
 <div id="stage"><div class="frame" id="frame"></div><div class="app sky" id="app">
@@ -664,19 +665,27 @@ const VIEWS={
     <div class="rtabs">${[['i','Internal',RUB_I.length],['and','External',RUB_E.length]].map(t=>`<button class="${RB.tab===t[0]?'on':''}" onclick="RB.tab='${t[0]}';render()">${t[1]}<small>${t[2]}</small></button>`).join('')}</div>
     <div id="rub">${rubList()}</div>`}},
  user(){
+   const A=!window.showSaveFilePicker,S=SHIPF;
    return{theme:'stone',title:T('USER'),body:
    `<div class="pc" style="display:flex;align-items:center;gap:12px;padding:14px"><span class="av" style="width:54px;height:54px;font-size:20px">IT</span><span><b style="font-size:17px">IT Manager</b><br><span style="font-size:13px;color:var(--ink-2)">SHIP · IT operations</span></span></div>
+    <div class="sechd" style="color:var(--ink-2)">OneDrive sync</div>
+    <div class="pc">${A?
+     `<div class="li"><span class="t"><b>${S.dirty?'Changes not saved to OneDrive':'Up to date with OneDrive'}</b><span>${S.saved?'Last save to OneDrive '+S.saved:'Never saved from this phone'}${S.loaded?' · last load '+S.loaded:''}</span></span><span class="pill ${S.dirty?'p-a':'p-g'}">${S.dirty?'to save':'ok'}</span></div>
+      <button class="li" onclick="loadFromFile()"><span class="t"><b>Load from OneDrive</b><span>Choose “SHIP data.txt” in your OneDrive folder: SHIP merges it with this phone, keeping the newest changes</span></span><span class="chev">${ic('chev')}</span></button>
+      <button class="li" onclick="saveToOneDrive()"><span class="t"><b>Save to OneDrive</b><span>Share → OneDrive → same folder. If OneDrive asks, choose “Replace”</span></span><span class="chev">${ic('chev')}</span></button>`:
+     `<button class="li" onclick="linkFile()"><span class="t"><b>${S.name?'Data file: '+S.name:'Link the data file'}</b><span>${S.name?(S.ok?'Synced automatically'+(S.saved?' · saved '+S.saved:'')+(S.pulled?' · updated from OneDrive '+S.pulled:''):'Tap to reconnect (Edge asks for permission)'):'Create or choose “SHIP data.txt” in your OneDrive folder'}</span></span><span class="pill ${S.name&&S.ok?'p-g':'p-a'}">${S.name&&S.ok?'on':'off'}</span></button>
+      <button class="li" onclick="openDataFile()"><span class="t"><b>Use an existing data file</b><span>Choose the file already in OneDrive (e.g. created on the Surface): SHIP merges it and keeps it linked</span></span><span class="chev">${ic('chev')}</span></button>
+      ${S.name&&S.ok?`<button class="li" onclick="pullNow(true)"><span class="t"><b>Check OneDrive now</b><span>SHIP also checks automatically every time you come back to the app</span></span><span class="chev">${ic('chev')}</span></button>`:''}`}
+    </div>
     <div class="sechd" style="color:var(--ink-2)">Your data</div>
     <div class="pc">
-     <div class="li"><span class="t"><b>Saved on this device</b><span>Every change is saved automatically in this browser${SHIPF.last?' · last change '+SHIPF.last:''}</span></span><span class="pill p-g">on</span></div>
-     ${window.showSaveFilePicker?`<button class="li" onclick="linkFile()"><span class="t"><b>${SHIPF.name?'Data file: '+SHIPF.name:'Link a data file'}</b><span>${SHIPF.name?(SHIPF.ok?'Kept up to date automatically'+(SHIPF.saved?' · saved '+SHIPF.saved:''):'Tap to reconnect (Edge asks for permission)'):'Choose a file in your OneDrive/SharePoint folder: SHIP writes every change into it'}</span></span><span class="chev">${ic('chev')}</span></button>`:''}
-     <button class="li" onclick="openDataFile()"><span class="t"><b>Open a data file</b><span>Load data from a SHIP file (replaces the data on this device)</span></span><span class="chev">${ic('chev')}</span></button>
-     <button class="li" onclick="downloadBackup()"><span class="t"><b>Download a backup</b><span>A .json copy of everything</span></span><span class="chev">${ic('chev')}</span></button>
+     <div class="li"><span class="t"><b>Saved on this device</b><span>Every change is saved automatically in this browser${S.last?' · last change '+S.last:''}</span></span><span class="pill p-g">on</span></div>
+     <button class="li" onclick="downloadBackup()"><span class="t"><b>Download a backup</b><span>A copy of everything</span></span><span class="chev">${ic('chev')}</span></button>
      <button class="li" onclick="resetData(this)"><span class="t"><b>Reset to sample data</b><span>Deletes your data on this device</span></span><span class="chev">${ic('chev')}</span></button>
     </div>
     ${innerWidth>=700?`<div class="sechd" style="color:var(--ink-2)">Display</div>
     <div class="pc"><button class="li" onclick="setPV(PV==='auto'?'p':'auto')"><span class="t"><b>Tablet frame preview</b><span>For checking the layout from a PC</span></span><span class="tg${PV!=='auto'?' on':''}"></span></button></div>`:''}
-    <p style="text-align:center;font-size:12px;color:var(--ink-2)">SHIP · version for Android · build 08/10 12:33</p>`}}
+    <p style="text-align:center;font-size:12px;color:var(--ink-2)">SHIP · version for Android · build 08/10 12:56</p>`}}
 };
 
 /* ---- Atlante: costellazione (verticale) e schede con anteprima (orizzontale) ---- */
@@ -1384,31 +1393,75 @@ function wifiView(){const c=connInfo(),R=WF.res,pts=WF.pts.filter(p=>p.plan&&p.p
        <div class="tsec"><button onclick="wfCSV()">Export CSV</button></div>`:'<div class="tnote">No points yet.</div>'}
    </div></div>`)}}
 
-/* ===== SHIP: file dati (PC / Surface) ===== */
-const SHIPF={name:'',ok:false,saved:'',last:''};let FH=null,wT=null;
-const shipKeys=()=>Object.keys(localStorage).filter(k=>k.startsWith('ship:')||k.startsWith('edits2:'));
-const dump=()=>{const o={app:'SHIP',saved:new Date().toISOString(),data:{}};shipKeys().forEach(k=>o.data[k]=localStorage.getItem(k));return JSON.stringify(o,null,1)};
-const hhmm=()=>new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+/* ===== SHIP: data file + OneDrive sync ===== */
+const SHIPF={name:'',ok:false,saved:'',last:'',pulled:'',loaded:'',mod:0,dirty:false};let FH=null,wT=null;
+const _set=Storage.prototype.setItem;
+const trackK=k=>k&&(k.startsWith('ship:')||k.startsWith('edits2:'));
+const shipKeys=()=>Object.keys(localStorage).filter(trackK);
+let META={};try{META=JSON.parse(localStorage.getItem('shipmeta')||'{}')}catch(e){}
+const saveMeta=()=>{try{_set.call(localStorage,'shipmeta',JSON.stringify(META))}catch(e){}};
+try{const s=JSON.parse(localStorage.getItem('shipsync')||'{}');SHIPF.saved=s.saved||'';SHIPF.loaded=s.loaded||'';SHIPF.dirty=!!s.dirty}catch(e){}
+const saveSync=()=>{try{_set.call(localStorage,'shipsync',JSON.stringify({saved:SHIPF.saved,loaded:SHIPF.loaded,dirty:SHIPF.dirty}))}catch(e){}};
+const sameVal=(a,b)=>{if(a===b)return true;try{const x=JSON.parse(a),y=JSON.parse(b);if(x&&y&&typeof x==='object'&&'d' in x&&'d' in y)return JSON.stringify(x.d)===JSON.stringify(y.d)}catch(e){}return false};
+const SECK=['tk','ot','ck','pj','net','sw','inv','sec','sup','dep'].map(k=>'ship:'+k);
+function touch(k,old,v){if(!trackK(k))return;if(old==null){if(SECK.includes(k)){if(META[k]==null){META[k]=0;saveMeta()}return}}else if(sameVal(old,v))return;META[k]=Date.now();saveMeta();changed()}
+Storage.prototype.setItem=function(k,v){const tr=this===localStorage&&trackK(k);const old=tr?this.getItem(k):null;_set.call(this,k,v);if(tr)touch(k,old,String(v))};
+addEventListener('storage',e=>{if(trackK(e.key))touch(e.key,e.oldValue,e.newValue)});
+const dump=()=>{const o={app:'SHIP',saved:new Date().toISOString(),data:{},meta:{}};shipKeys().forEach(k=>{o.data[k]=localStorage.getItem(k);o.meta[k]=META[k]||0});return JSON.stringify(o)};
+const hhmm=()=>new Date().toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+function markDirty(){const b=$('isl')&&$('isl').lastElementChild;if(!b)return;let m=b.querySelector('em.dty');const need=SHIPF.dirty||(SHIPF.name&&!SHIPF.ok);if(need&&!m){m=document.createElement('em');m.className='dty';m.textContent='!';b.appendChild(m)}if(!need&&m)m.remove()}
 function idb(){return new Promise((ok,ko)=>{const r=indexedDB.open('ship',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>ok(r.result);r.onerror=ko})}
 async function kv(k,v){const db=await idb();return new Promise(ok=>{const t=db.transaction('kv',v===undefined?'readonly':'readwrite'),st=t.objectStore('kv');const q=v===undefined?st.get(k):st.put(v,k);q.onsuccess=()=>ok(q.result);q.onerror=()=>ok(null)})}
-async function writeFile(){if(!FH||!SHIPF.ok)return;try{const w=await FH.createWritable();await w.write(dump());await w.close();SHIPF.saved=hhmm()}catch(e){SHIPF.ok=false}}
-function changed(){SHIPF.last=hhmm();clearTimeout(wT);wT=setTimeout(writeFile,800)}
-addEventListener('storage',e=>{if(e.key&&(e.key.startsWith('ship:')||e.key.startsWith('edits2:')))changed()});
+async function writeFile(){if(!FH||!SHIPF.ok)return;try{const w=await FH.createWritable();await w.write(dump());await w.close();SHIPF.mod=(await FH.getFile()).lastModified;SHIPF.saved=hhmm();SHIPF.dirty=false;saveSync();markDirty()}catch(e){SHIPF.ok=false;markDirty()}}
+function changed(){SHIPF.last=hhmm();if(FH&&SHIPF.ok){clearTimeout(wT);wT=setTimeout(writeFile,1200)}else if(!window.showSaveFilePicker){SHIPF.dirty=true;saveSync()}markDirty()}
+/* merge: for every section keep the newest version */
+function mergeIn(txt){let o;try{o=JSON.parse(txt)}catch(e){return null}if(!o||o.app!=='SHIP'||!o.data)return null;
+  const rm=o.meta||{};let loc=false,newer=false;
+  new Set([...Object.keys(o.data),...shipKeys()]).forEach(k=>{if(!trackK(k))return;const rv=o.data[k],lv=localStorage.getItem(k),rt=rm[k]||0,lt=META[k]||0;
+    if(rv!=null&&(lv==null||rt>lt)){if(rv!==lv){_set.call(localStorage,k,rv);loc=true}META[k]=rt}
+    else if(lv!=null&&(rv==null||lt>rt))newer=true});
+  saveMeta();return{loc,newer}}
+function reloadKeep(){Object.keys(SECF).forEach(k=>{SECF[k].remove();delete SECF[k]});
+  try{NFC.rules=lsg(NK.rules,[]);NFC.tags=lsg(NK.tags,{});NFC.tpl=lsg(NK.tpl,[]);NFC.log=lsg(NK.log,[]);NFC.audit=lsg(NK.audit,null);Object.assign(NFC.set,lsg(NK.set,{}))}catch(e){}
+  try{WF.pts=lsg('ship:wifipts',[]);WF.res=lsg('ship:wifilast',null)}catch(e){}
+  render();PLKEYS.forEach(k=>{if(!SECF[k])mkFrame(k,'')})}
+let pulling=false;
+async function pullNow(manual){if(!FH||!SHIPF.ok||pulling)return;pulling=true;
+  try{const f=await FH.getFile();if(f.lastModified>SHIPF.mod||manual){const txt=await f.text();SHIPF.mod=f.lastModified;const r=txt.trim()?mergeIn(txt):{loc:false,newer:true};
+      SHIPF.pulled=hhmm();if(r&&r.newer)await writeFile();if(r&&r.loc){toast('Updated from OneDrive');setTimeout(reloadKeep,300);return}if(manual)toast('Already up to date')}}
+  catch(e){SHIPF.ok=false;markDirty()}finally{pulling=false}}
+addEventListener('focus',()=>pullNow());
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')pullNow()});
+setInterval(()=>{if(document.visibilityState==='visible')pullNow()},30000);
+const TYPES=[{description:'SHIP data',accept:{'text/plain':['.txt'],'application/json':['.json']}}];
 async function linkFile(){
   try{
-    if(FH&&!SHIPF.ok){if((await FH.requestPermission({mode:'readwrite'}))==='granted'){SHIPF.ok=true;await writeFile();toast('Data file reconnected');render()}return}
-    if(!window.showSaveFilePicker){toast('This browser cannot link files: use Edge or Chrome, or download a backup');return}
-    FH=await showSaveFilePicker({suggestedName:'SHIP data.json',types:[{description:'SHIP data',accept:{'application/json':['.json']}}]});
-    SHIPF.name=FH.name;SHIPF.ok=true;await kv('fh',FH);await writeFile();toast('Linked: '+FH.name);render()
+    if(FH&&!SHIPF.ok){if((await FH.requestPermission({mode:'readwrite'}))==='granted'){SHIPF.ok=true;await pullNow(true);await writeFile();toast('Data file reconnected');render()}return}
+    if(!window.showSaveFilePicker){toast('Use “Load from OneDrive” on this device');return}
+    const h=await showSaveFilePicker({suggestedName:'SHIP data.txt',types:TYPES});
+    const f=await h.getFile();FH=h;SHIPF.name=h.name;SHIPF.ok=true;await kv('fh',h);
+    if(f.size){const r=mergeIn(await f.text());SHIPF.mod=f.lastModified;await writeFile();toast('Linked: '+h.name);if(r&&r.loc){setTimeout(reloadKeep,300);return}}
+    else{await writeFile();toast('Linked: '+h.name)}render()
   }catch(e){if(e.name!=='AbortError')toast('Could not link the file')}}
 async function openDataFile(){
-  const load=async txt=>{try{const o=JSON.parse(txt);if(o.app!=='SHIP'||!o.data)throw 0;shipKeys().forEach(k=>localStorage.removeItem(k));Object.entries(o.data).forEach(([k,v])=>localStorage.setItem(k,v));toast('Data loaded');setTimeout(()=>location.reload(),600)}catch(e){toast('This is not a SHIP data file')}};
-  if(window.showOpenFilePicker){try{const [h]=await showOpenFilePicker({types:[{description:'SHIP data',accept:{'application/json':['.json']}}]});await load(await (await h.getFile()).text());FH=h;await kv('fh',h)}catch(e){}return}
-  const i=document.createElement('input');i.type='file';i.accept='.json,application/json';i.onchange=async()=>load(await i.files[0].text());i.click()}
-function downloadBackup(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([dump()],{type:'application/json'}));a.download='SHIP backup '+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();toast('Backup downloaded')}
+  if(!window.showOpenFilePicker)return loadFromFile();
+  try{const [h]=await showOpenFilePicker({types:TYPES});const p=await h.requestPermission({mode:'readwrite'});
+    const f=await h.getFile();const r=mergeIn(await f.text());if(!r){toast('This is not a SHIP data file');return}
+    if(p==='granted'){FH=h;SHIPF.name=h.name;SHIPF.ok=true;SHIPF.mod=f.lastModified;await kv('fh',h);if(r.newer)await writeFile()}
+    toast('Data merged'+(p==='granted'?' · file linked':''));if(r.loc){setTimeout(reloadKeep,300);return}render()}catch(e){}}
+function loadFromFile(){const i=document.createElement('input');i.type='file';i.accept='.txt,.json,text/plain,application/json';
+  i.onchange=async()=>{const f=i.files[0];if(!f)return;const r=mergeIn(await f.text());if(!r){toast('This is not a SHIP data file');return}
+    SHIPF.loaded=hhmm();SHIPF.dirty=r.newer;saveSync();toast(r.loc?'Data loaded from OneDrive':'Already up to date');if(r.loc){setTimeout(reloadKeep,300);return}render()};i.click()}
+async function saveToOneDrive(){const file=new File([dump()],'SHIP data.txt',{type:'text/plain'});
+  try{if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:'SHIP data'})}else{const a=document.createElement('a');a.href=URL.createObjectURL(file);a.download=file.name;document.body.appendChild(a);a.click();a.remove();toast('Saved in Downloads: move it to OneDrive')}
+    SHIPF.saved=hhmm();SHIPF.dirty=false;saveSync();markDirty();render()}catch(e){if(e.name!=='AbortError')toast('Could not share the file')}}
+function downloadBackup(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([dump()],{type:'text/plain'}));a.download='SHIP backup '+new Date().toISOString().slice(0,10)+'.txt';document.body.appendChild(a);a.click();a.remove();toast('Backup downloaded')}
 function resetData(el){if(!el.dataset.sure){el.dataset.sure=1;el.querySelector('b').textContent='Tap again to confirm the reset';setTimeout(()=>{delete el.dataset.sure;render()},4000);return}
-  shipKeys().forEach(k=>localStorage.removeItem(k));toast('Sample data restored');setTimeout(()=>location.reload(),600)}
-(async()=>{try{const h=await kv('fh');if(h){FH=h;SHIPF.name=h.name;SHIPF.ok=(await h.queryPermission({mode:'readwrite'}))==='granted'}}catch(e){}})();
+  shipKeys().forEach(k=>localStorage.removeItem(k));localStorage.removeItem('shipmeta');localStorage.removeItem('shipsync');toast('Sample data restored');setTimeout(()=>location.reload(),600)}
+(async()=>{try{const h=await kv('fh');if(h){FH=h;SHIPF.name=h.name;SHIPF.ok=(await h.queryPermission({mode:'readwrite'}))==='granted';if(SHIPF.ok)pullNow()}}catch(e){}markDirty()})();
+try{const s=JSON.parse(sessionStorage.getItem('shipstack')||'null');if(s){sessionStorage.removeItem('shipstack');stack=s;render()}}catch(e){}
+setTimeout(markDirty,300);
+{const _R2=render;render=function(){_R2();markDirty()}}
 
 if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 </script>
