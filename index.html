@@ -703,7 +703,7 @@ const VIEWS={
     <div class="pc">
      ${DH?(Object.keys(XL).length?Object.entries(XL).sort().map(([n,s])=>`<div class="li"><span class="t"><b>${esc3(n)}</b><span>${s.on?(s.rows!=null?s.rows+' devices · imported '+s.at+(s.tabs&&s.tabs.length?' · tabs '+esc3(s.tabs.join(', ')):''):'waiting for import'):'not imported'}${s.err?' · '+esc3(s.err):''}</span></span><span class="tg${s.on?' on':''}" onclick="xlToggle('${esc3(n)}')"></span></div>`).join(''):
        `<div class="li"><span class="t"><b>No Excel files in the folder</b><span>Put your inventories (.xlsx or .csv) in the OneDrive folder ${esc3(SHIPF.folder||'')}</span></span></div>`)+
-       `<button class="li" onclick="xlScan(true)"><span class="t"><b>Check the folder now</b><span>Files with “inventory” or “inventario” in the name are imported automatically; switch on any other file above</span></span><span class="chev">${ic('chev')}</span></button>`:
+       `<button class="li" onclick="xlScan(true)"><span class="t"><b>Check the folder now</b><span>Everything in the “Inventari” subfolder, and files with “inventory” or “inventario” in the name, is imported automatically; switch on any other file above</span></span><span class="chev">${ic('chev')}</span></button>`:
       `<div class="li"><span class="t"><b>Automatic import ${window.showDirectoryPicker?'needs the folder':'is not possible on this device'}</b><span>${window.showDirectoryPicker?'Link the OneDrive folder above: every Excel inventory you put there updates Inventory by itself':'On the phone import the file by hand: it is then saved to OneDrive with the rest'}</span></span></div>`}
      <button class="li" onclick="xlPick()"><span class="t"><b>Import an Excel file</b><span>Choose a .xlsx or .csv: each sheet becomes an Inventory tab</span></span><span class="chev">${ic('chev')}</span></button>
      <button class="li" onclick="xlNoSample(this)"><span class="t"><b>Remove the sample devices</b><span>Keeps only the devices imported from your files or added by you</span></span><span class="chev">${ic('chev')}</span></button>
@@ -724,7 +724,7 @@ const VIEWS={
     </div>
     ${innerWidth>=700?`<div class="sechd" style="color:var(--ink-2)">Display</div>
     <div class="pc"><button class="li" onclick="setPV(PV==='auto'?'p':'auto')"><span class="t"><b>Tablet frame preview</b><span>For checking the layout from a PC</span></span><span class="tg${PV!=='auto'?' on':''}"></span></button></div>`:''}
-    <p style="text-align:center;font-size:12px;color:var(--ink-2)">SHIP · version for Android · build 08/10 14:06</p>`}}
+    <p style="text-align:center;font-size:12px;color:var(--ink-2)">SHIP · version for Android · build 08/10 14:12</p>`}}
 };
 
 /* ---- Atlante: costellazione (verticale) e schede con anteprima (orizzontale) ---- */
@@ -1553,8 +1553,11 @@ async function xlRun(name,buf,mod){const r=await xlImport(name,buf);const s=XL[n
   s.err=r?r.err:'error';s.mod=mod;xlSave();toast(name+': '+s.err);return false}
 let xlBusy=false;
 async function xlScan(manual){if(!DH||!SHIPF.ok||xlBusy)return;xlBusy=true;let any=false;
-  try{for await (const [n,h] of DH.entries()){if(h.kind!=='file'||!/\.(xlsx|xlsm|csv)$/i.test(n)||n.startsWith('~$'))continue;
-      if(!XL[n]){XL[n]={on:/invent/i.test(n),mod:0};xlSave()}const s=XL[n];if(!s.on)continue;
+  const files=[];const walk=async(dir,pre,depth)=>{for await (const [n,h] of dir.entries()){
+      if(h.kind==='directory'){if(depth<2&&!n.startsWith('.'))await walk(h,pre+n+'/',depth+1);continue}
+      if(/\.(xlsx|xlsm|csv)$/i.test(n)&&!n.startsWith('~$'))files.push([pre+n,h,/^(inventari|inventario|inventory|inventories)\//i.test(pre)])}};
+  try{await walk(DH,'',0);
+    for(const [n,h,inv] of files){if(!XL[n]){XL[n]={on:inv||/invent/i.test(n),mod:0};xlSave()}const s=XL[n];if(!s.on)continue;
       const f=await h.getFile();if(f.lastModified>(s.mod||0)||(manual&&s.err)){if(await xlRun(n,await f.arrayBuffer(),f.lastModified))any=true}}
   }catch(e){}finally{xlBusy=false}
   if(any)setTimeout(reloadKeep,300);else if(manual){toast('Inventories up to date');render()}}
