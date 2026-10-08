@@ -687,12 +687,13 @@ const VIEWS={
     <div class="rtabs">${[['i','Internal',RUB_I.length],['and','External',RUB_E.length]].map(t=>`<button class="${RB.tab===t[0]?'on':''}" onclick="RB.tab='${t[0]}';render()">${t[1]}<small>${t[2]}</small></button>`).join('')}</div>
     <div id="rub">${rubList()}</div>`}},
  user(){
-   const A=!window.showSaveFilePicker,S=SHIPF;
+   const A=IS_AND||!window.showSaveFilePicker,S=SHIPF;
    return{theme:'stone',title:T('USER'),body:
    `<div class="pc" style="display:flex;align-items:center;gap:12px;padding:14px"><span class="av" style="width:54px;height:54px;font-size:20px">IT</span><span><b style="font-size:17px">IT Manager</b><br><span style="font-size:13px;color:var(--ink-2)">SHIP · IT operations</span></span></div>
     <div class="sechd" style="color:var(--ink-2)">OneDrive sync</div>
     <div class="pc">${A?
      `<div class="li"><span class="t"><b>${S.dirty?'Changes not saved to OneDrive':'Up to date with OneDrive'}</b><span>${S.saved?'Last save to OneDrive '+S.saved:'Never saved from this phone'}${S.loaded?' · last load '+S.loaded:''}</span></span><span class="pill ${S.dirty?'p-a':'p-g'}">${S.dirty?'to save':'ok'}</span></div>
+      ${window.showOpenFilePicker?`<button class="li" onclick="openDataFile()"><span class="t"><b>${S.name?'Data file: '+S.name:'Link the data file (automatic sync)'}</b><span>${S.name?(S.ok?'Synced automatically'+(S.pulled?' · updated '+S.pulled:''):'Tap to reconnect'):'Choose “SHIP data.txt” from OneDrive: SHIP keeps it updated by itself. If it does not work, use the two buttons below'}</span></span><span class="pill ${S.name&&S.ok?'p-g':'p-a'}">${S.name&&S.ok?'on':'off'}</span></button>`:''}
       <button class="li" onclick="loadFromFile()"><span class="t"><b>Load from OneDrive</b><span>Choose “SHIP data.txt” in your OneDrive folder: SHIP merges it with this phone, keeping the newest changes</span></span><span class="chev">${ic('chev')}</span></button>
       <button class="li" onclick="saveToOneDrive()"><span class="t"><b>Save to OneDrive</b><span>Share → OneDrive → same folder. If OneDrive asks, choose “Replace”</span></span><span class="chev">${ic('chev')}</span></button>`:
      `<button class="li" onclick="linkFolder()"><span class="t"><b>${S.folder?'Folder: '+S.folder:'Link the OneDrive folder'}</b><span>${S.folder?(S.ok?'Synced automatically'+(S.saved?' · saved '+S.saved:'')+(S.pulled?' · updated from OneDrive '+S.pulled:''):'Tap to reconnect (Edge asks for permission)'):'Choose a folder in your work OneDrive: SHIP keeps “SHIP data.txt” there and reads your Excel inventories'}</span></span><span class="pill ${S.folder&&S.ok?'p-g':'p-a'}">${S.folder&&S.ok?'on':'off'}</span></button>
@@ -704,7 +705,7 @@ const VIEWS={
      ${DH?(Object.keys(XL).length?Object.entries(XL).sort().map(([n,s])=>`<div class="li"><span class="t"><b>${esc3(n)}</b><span>${s.on?(s.rows!=null?s.rows+' devices · imported '+s.at+(s.tabs&&s.tabs.length?' · tabs '+esc3(s.tabs.join(', ')):''):'waiting for import'):'not imported'}${s.err?' · '+esc3(s.err):''}</span></span><span class="tg${s.on?' on':''}" onclick="xlToggle('${esc3(n)}')"></span></div>`).join(''):
        `<div class="li"><span class="t"><b>No Excel files in the folder</b><span>Put your inventories (.xlsx or .csv) in the OneDrive folder ${esc3(SHIPF.folder||'')}</span></span></div>`)+
        `<button class="li" onclick="xlScan(true)"><span class="t"><b>Check the folder now</b><span>Everything in the “Inventari” subfolder, and files with “inventory” or “inventario” in the name, is imported automatically; switch on any other file above</span></span><span class="chev">${ic('chev')}</span></button>`:
-      `<div class="li"><span class="t"><b>Automatic import ${window.showDirectoryPicker?'needs the folder':'is not possible on this device'}</b><span>${window.showDirectoryPicker?'Link the OneDrive folder above: every Excel inventory you put there updates Inventory by itself':'On the phone import the file by hand: it is then saved to OneDrive with the rest'}</span></span></div>`}
+      `<div class="li"><span class="t"><b>Automatic import ${window.showDirectoryPicker&&!IS_AND?'needs the folder':'is not possible on the phone'}</b><span>${window.showDirectoryPicker&&!IS_AND?'Link the OneDrive folder above: every Excel inventory you put there updates Inventory by itself':'On the phone import the file by hand: it is then saved to OneDrive with the rest'}</span></span></div>`}
      <button class="li" onclick="xlPick()"><span class="t"><b>Import an Excel file</b><span>Choose a .xlsx or .csv: each sheet becomes an Inventory tab</span></span><span class="chev">${ic('chev')}</span></button>
      <button class="li" onclick="xlNoSample(this)"><span class="t"><b>Remove the sample devices</b><span>Keeps only the devices imported from your files or added by you</span></span><span class="chev">${ic('chev')}</span></button>
     </div>
@@ -724,7 +725,7 @@ const VIEWS={
     </div>
     ${innerWidth>=700?`<div class="sechd" style="color:var(--ink-2)">Display</div>
     <div class="pc"><button class="li" onclick="setPV(PV==='auto'?'p':'auto')"><span class="t"><b>Tablet frame preview</b><span>For checking the layout from a PC</span></span><span class="tg${PV!=='auto'?' on':''}"></span></button></div>`:''}
-    <p style="text-align:center;font-size:12px;color:var(--ink-2)">SHIP · version for Android · build 08/10 14:12</p>`}}
+    <p style="text-align:center;font-size:12px;color:var(--ink-2)">SHIP · version for Android · build 08/10 16:41</p>`}}
 };
 
 /* ---- Atlante: costellazione (verticale) e schede con anteprima (orizzontale) ---- */
@@ -1433,6 +1434,7 @@ function wifiView(){const c=connInfo(),R=WF.res,pts=WF.pts.filter(p=>p.plan&&p.p
    </div></div>`)}}
 
 /* ===== SHIP: data file + OneDrive sync ===== */
+const IS_AND=/Android/i.test(navigator.userAgent);
 const SHIPF={folder:'',name:'',ok:false,saved:'',last:'',pulled:'',loaded:'',mod:0,dirty:false};let FH=null,wT=null;
 const _set=Storage.prototype.setItem;
 const trackK=k=>k&&(k.startsWith('ship:')||k.startsWith('edits2:'));
@@ -1452,7 +1454,7 @@ function markDirty(){const b=$('isl')&&$('isl').lastElementChild;if(!b)return;le
 function idb(){return new Promise((ok,ko)=>{const r=indexedDB.open('ship',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>ok(r.result);r.onerror=ko})}
 async function kv(k,v){const db=await idb();return new Promise(ok=>{const t=db.transaction('kv',v===undefined?'readonly':'readwrite'),st=t.objectStore('kv');const q=v===undefined?st.get(k):st.put(v,k);q.onsuccess=()=>ok(q.result);q.onerror=()=>ok(null)})}
 async function writeFile(){if(!FH||!SHIPF.ok)return;try{const w=await FH.createWritable();await w.write(dump());await w.close();SHIPF.mod=(await FH.getFile()).lastModified;SHIPF.saved=hhmm();SHIPF.dirty=false;saveSync();markDirty()}catch(e){SHIPF.ok=false;markDirty()}}
-function changed(){SHIPF.last=hhmm();if(FH&&SHIPF.ok){clearTimeout(wT);wT=setTimeout(writeFile,1200)}else if(!window.showSaveFilePicker){SHIPF.dirty=true;saveSync()}markDirty()}
+function changed(){SHIPF.last=hhmm();if(FH&&SHIPF.ok){clearTimeout(wT);wT=setTimeout(writeFile,1200)}else if(IS_AND||!window.showSaveFilePicker){SHIPF.dirty=true;saveSync()}markDirty()}
 /* merge: for every section keep the newest version */
 function mergeIn(txt){let o;try{o=JSON.parse(txt)}catch(e){return null}if(!o||o.app!=='SHIP'||!o.data)return null;
   const rm=o.meta||{};let loc=false,newer=false;
@@ -1484,6 +1486,7 @@ async function linkFile(){
   }catch(e){if(e.name!=='AbortError')toast('Could not link the file')}}
 async function openDataFile(){
   if(!window.showOpenFilePicker)return loadFromFile();
+  if(FH&&!SHIPF.ok){try{if((await FH.requestPermission({mode:'readwrite'}))==='granted'){SHIPF.ok=true;await pullNow(true);await writeFile();render();return}}catch(e){}}
   try{const [h]=await showOpenFilePicker({types:TYPES});const p=await h.requestPermission({mode:'readwrite'});
     const f=await h.getFile();const r=mergeIn(await f.text());if(!r){toast('This is not a SHIP data file');return}
     if(p==='granted'){FH=h;SHIPF.name=h.name;SHIPF.ok=true;SHIPF.mod=f.lastModified;await kv('fh',h);if(r.newer)await writeFile()}
